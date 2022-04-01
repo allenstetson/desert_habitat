@@ -16,6 +16,7 @@ import time
 # third party
 import adafruit_dht
 import board
+import decimal
 import requests
 import RPi.GPIO as gpio
 
@@ -91,17 +92,19 @@ class HabitatIot:
         delta = datetime.datetime.now() - self.lastNotification
         if delta.total_seconds()/60/60 > 4.0:
             # it has been more than 4 hours since last notification.
-            urlSend = 'https://maker.ifttt.com/trigger/habitat_low_temp/json/with/key/{}'.format(keys.apikeys.IFTTT_KEY)
-        if not self.notify:
-            print("skipping notification as requested.")
-            return
-        try:
-            requests.post(urlSend)
-            print("Sent request to:\n{}".format(urlSend))
-        except requests.exceptions.ConnectionError:
-            print("trouble sending notification...")
-            print("Notification sent.")
-            self.lastNotification = datetime.datetime.now()
+            urlSend = 'https://maker.ifttt.com/trigger/habitat_low_temp/json/with/key/{}'
+            urlSend = urlSend.format(keys.apikeys.IFTTT_KEY)
+            if not self.notify:
+                print("skipping notification as requested.")
+                return
+            try:
+                self.lastNotification = datetime.datetime.now()
+                requests.post(urlSend)
+                print("Sent request to:\n{}".format(urlSend))
+            except requests.exceptions.ConnectionError:
+                print("trouble sending notification...")
+                print("Notification sent.")
+                self.lastNotification = datetime.datetime.now()
         else:
             msg = "Notification was already sent {} hours ago. "
             msg += "Waiting for 4 hours to go by."
@@ -118,7 +121,21 @@ class HabitatIot:
             data (dict): The data to check for abnormalities.
 
         """
-        if data["baskTemp"] < 76.5 or data["baskTemp"] > 110.0:
+        abnormalities = []
+        if data["baskTemp"] < 76.5:
+            abnormalities.append(("Basking Temperature", "low"))
+        elif data["baskTemp"] > 110.0:
+            abnormalities.append(("Basking Temperature", "high")) 
+        if data["coolTemp"] < 76.5:
+            abnormalities.append(("Cooling Temperature", "low"))
+        elif data["coolTemp"] > 110.0:
+            abnormalities.append(("Cooling Temperature", "high")) 
+        if data["waterLevel"] > 8.5:
+            abnormalities.append(("Water Level", "low")) 
+
+        if abnormalities:
+            for abnormality in abnormalities:
+                print("ALERT: {} is too {}!".format(abnormality[0], abnormality[1]))
             if self.lastReadingGood:
                 self.lastReadingGood = False
                 self.lastAbnormality = datetime.datetime.now()
@@ -126,8 +143,9 @@ class HabitatIot:
                 return
             delta = datetime.datetime.now() - self.lastAbnormality
             if delta.total_seconds()/60 > 30:
-                # abnormal temp has persisted for more than 30 mins!
+                # abnormality has persisted for more than 30 mins!
                 print("Persistent abnormal readings! Notifying.")
+
                 self.alertAbnormal()
                 return
             print("Subsequent abnormal reading; waiting until 30m is up.")
@@ -186,6 +204,15 @@ class HabitatIot:
 
         elapsed = stopTime - startTime
         distance = (elapsed * 34300) / 2
+        distance = float(decimal.Decimal(distance).quantize(decimal.Decimal('.1')))
+        #-
+        full = 3.0
+        empty = 9.0
+        percEmpty = (100 / empty - full) * (distance - full)
+        percFull = 100.0 - percEmpty
+        percFull = float(decimal.Decimal(percFull).quantize(decimal.Decimal('.1')))
+        #-
+        print("Water level is {} cm from sensor ({}% full)".format(distance, percFull))
         return distance
 
     def run(self):
@@ -202,9 +229,9 @@ class HabitatIot:
             )
             print(msg)
             data = self.gatherData()
-            self.checkValues(data)
             waterLevel = self.gatherWaterLevel()
-            print("Water level is %.1f cm from sensor" % waterLevel)
+            data["waterLevel"] = waterLevel
+            self.checkValues(data)
             if self.upload:
                 uploadDelta = datetime.datetime.now() - self.lastUpload
                 if uploadDelta > datetime.timedelta(seconds=self.uploadInterval):
@@ -226,7 +253,8 @@ class HabitatIot:
             data["baskTemp"],
             data["coolTemp"],
             data["baskHumidity"],
-            data["coolHumidity"]
+            data["coolHumidity"],
+            data["waterLevel"]
         )
 
 
@@ -235,7 +263,7 @@ class HabitatIot:
 # -------------------------------------------------------------------
 if __name__ == "__main__":
     try:
-        habitatIot = HabitatIot(upload=False)
+        habitatIot = HabitatIot(notify=False, upload=True)
         habitatIot.run()
     except KeyboardInterrupt:
         print("\nDone")

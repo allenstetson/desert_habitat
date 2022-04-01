@@ -109,7 +109,8 @@ class Writer:
         except Exception as e:
             print("Describe Table failed:", e)
 
-    def writeRecords(self, thermBaskingVal, thermCoolingVal, humidBaskingVal, humidCoolingVal):
+    def writeRecords(self, thermBaskingVal, thermCoolingVal, humidBaskingVal,
+                     humidCoolingVal, waterLevelVal):
         # -------------------------------------------------------
         # Write Records
         print("{}: Writing Records".format(datetime.datetime.now().strftime("%Y.%m.%d - %H:%M:%S")))
@@ -143,8 +144,12 @@ class Writer:
             "MeasureName": "humidity_cooling",
             "MeasureValue": str(humidCoolingVal),
         }
+        waterLevel = {
+            "MeasureName": "water_level",
+            "MeasureValue": str(waterLevelVal)
+        }
 
-        records = [thermBasking, thermCooling, humidBasking, humidCooling]
+        records = [thermBasking, thermCooling, humidBasking, humidCooling, waterLevel]
 
         try:
             result = self.client.write_records(DatabaseName=self.dbName, TableName=self.tableName,
