@@ -1,0 +1,241 @@
+"""
+desert_habitat.py
+
+This is the main script for the desert habitat, built for Khaleesi the bearded
+dragon. It helps to monitor temperature, humidity, and water level, uploading
+values to AWS Timestream and visualized on Grafana for AWS. Push notifications
+are sent through IFTTT if any abnormal values persist for longer than an
+acceptable threshold.
+
+"""
+# stdlib
+import datetime
+import signal
+import time
+
+# third party
+import adafruit_dht
+import board
+import requests
+import RPi.GPIO as gpio
+
+# local
+import keys.apikeys
+import timestream
+
+# -------------------------------------------------------------------
+# HANDLERS
+# -------------------------------------------------------------------
+def handler(signum, frame):
+    """Handles the KeyboardInterrupt signal, cleans up."""
+    msg = "\nCntrl+C pressed "
+    print(msg)
+    gpio.cleanup()
+    exit(1)
+
+signal.signal(signal.SIGINT, handler)
+
+
+# -------------------------------------------------------------------
+# GLOBALS
+# -------------------------------------------------------------------
+DHT_SENSOR1 = adafruit_dht.DHT22(board.D6)
+DHT_SENSOR2 = adafruit_dht.DHT22(board.D5)
+gpio.setmode(gpio.BCM)
+GPIO_TRIGGER = 18
+GPIO_ECHO = 24
+gpio.setup(GPIO_TRIGGER, gpio.OUT)
+gpio.setup(GPIO_ECHO, gpio.IN)
+
+
+# -------------------------------------------------------------------
+# CLASSES
+# -------------------------------------------------------------------
+class HabitatIot:
+    """Class which performs monitoring on all sensors for the habitat.
+
+    The habitat includes two combination humidity/temperature sensors
+    (DHT22) and one ultrasonic rangefinder for testing water level.
+
+    Args:
+        notify (bool, optional): Whether or not to send push
+            notifications upon persistent abnormal readings. Defaults
+            to True.
+        upload (bool, optional): Whether or not to upload the data to
+            AWS (costs are incurred). Defaults to True.
+        uploadInterval (int, optional): The number of seconds to wait
+            between uploads (in order to reduce costs). Defaults to 600.
+
+    """
+    def __init__(self, notify=True, upload=True, uploadInterval=None):
+        self.baskingSensor = DHT_SENSOR1
+        self.coolingSensor = DHT_SENSOR2
+        self.lastAbnormality = datetime.datetime(2007, 2, 7)
+        self.lastNotification = datetime.datetime(2012, 12, 1)
+        self.lastReadingGood = True
+        self.lastUpload = datetime.datetime(2008, 6, 2)
+        self.notify = notify
+        self.upload = upload
+        self.uploadInterval = uploadInterval or 600
+        self.writer = timestream.Writer()
+
+    def alertAbnormal(self):
+        """Sends a push notification if one hasn't been sent in a while.
+
+        Currently, it is configured to send no more than one push
+        notification within 4 hours. Also respects the class variable
+        self.notify which is a boolean controlling whether or not
+        notifications are sent at all.
+
+        """
+        delta = datetime.datetime.now() - self.lastNotification
+        if delta.total_seconds()/60/60 > 4.0:
+            # it has been more than 4 hours since last notification.
+            urlSend = 'https://maker.ifttt.com/trigger/habitat_low_temp/json/with/key/{}'.format(keys.apikeys.IFTTT_KEY)
+        if not self.notify:
+            print("skipping notification as requested.")
+            return
+        try:
+            requests.post(urlSend)
+            print("Sent request to:\n{}".format(urlSend))
+        except requests.exceptions.ConnectionError:
+            print("trouble sending notification...")
+            print("Notification sent.")
+            self.lastNotification = datetime.datetime.now()
+        else:
+            msg = "Notification was already sent {} hours ago. "
+            msg += "Waiting for 4 hours to go by."
+            print(msg.format(delta.total_seconds()/60/60))
+
+    def checkValues(self, data):
+        """Checks the values for any abnormalities.
+
+        If abnormal readings are detected, this begins tracking whether or not
+        abnormal readings have persisted for more than 30 minutes, triggering
+        a push notification if so.
+
+        Args:
+            data (dict): The data to check for abnormalities.
+
+        """
+        if data["baskTemp"] < 76.5 or data["baskTemp"] > 110.0:
+            if self.lastReadingGood:
+                self.lastReadingGood = False
+                self.lastAbnormality = datetime.datetime.now()
+                print("First abnormal reading detected.")
+                return
+            delta = datetime.datetime.now() - self.lastAbnormality
+            if delta.total_seconds()/60 > 30:
+                # abnormal temp has persisted for more than 30 mins!
+                print("Persistent abnormal readings! Notifying.")
+                self.alertAbnormal()
+                return
+            print("Subsequent abnormal reading; waiting until 30m is up.")
+            return
+        self.lastReadingGood = True
+
+    def gatherData(self):
+        """Reads the sensors to gather the data from them.
+
+        Returns:
+            dict: The dictionary of values that were read from sensors within
+                the habitat.
+
+        """
+        try:
+            humidity1 = self.baskingSensor.humidity
+            tempC1 = self.baskingSensor.temperature
+            tempF1 = tempC1 * (9/5) + 32
+            print("basking humidity: {}%".format(humidity1))
+            print("basking temperature: {} c ({} f)".format(tempC1, tempF1))
+            # -
+            humidity2 = self.coolingSensor.humidity
+            tempC2 = self.coolingSensor.temperature
+            tempF2 = tempC2 * (9/5) + 32
+            print("cooling humidity: {}%".format(humidity2))
+            print("cooling temperature: {} c ({} f)".format(tempC2, tempF2))
+        except RuntimeError:
+            print("Nope. Retrying")
+            return self.gatherData()
+        data = {
+            "baskTemp": tempF1,
+            "baskHumidity": humidity1,
+            "coolTemp": tempF2,
+            "coolHumidity": humidity2
+        }
+        return data
+
+    def gatherWaterLevel(self):
+        """Pings the water level as distance in cm from ultrasonic rangefinder.
+
+        Returns:
+            float: The distance in centimeters from the rangefinder.
+
+        """
+        gpio.output(GPIO_TRIGGER, True)
+        # one millisecond ping
+        time.sleep(.00001)
+        gpio.output(GPIO_TRIGGER, False)
+
+        startTime = time.time()
+        stopTime = time.time()
+        while gpio.input(GPIO_ECHO) == 0:
+            startTime = time.time()
+        while gpio.input(GPIO_ECHO) == 1:
+            stopTime = time.time()
+
+        elapsed = stopTime - startTime
+        distance = (elapsed * 34300) / 2
+        return distance
+
+    def run(self):
+        """Main workhorse that continually reads data, checks it, and reports.
+
+        This runs in a continual loop until the user interrupts it with a
+        Cntrl+C KeyboardInterrupt.
+
+        """
+        while True:
+            msg = "---------  {}  ---------"
+            msg = msg.format(
+                datetime.datetime.now().strftime("%Y.%m.%d - %H:%M:%S")
+            )
+            print(msg)
+            data = self.gatherData()
+            self.checkValues(data)
+            waterLevel = self.gatherWaterLevel()
+            print("Water level is %.1f cm from sensor" % waterLevel)
+            if self.upload:
+                uploadDelta = datetime.datetime.now() - self.lastUpload
+                if uploadDelta > datetime.timedelta(seconds=self.uploadInterval):
+                    self.uploadData(data)
+                    self.lastUpload = datetime.datetime.now()
+                else:
+                    print("waiting for upload interval ({} seconds)".format(self.uploadInterval))
+            time.sleep(30)
+
+    def uploadData(self, data):
+        """Uploads sensor data to AWS Timestream.
+
+        Args:
+            data (dict): Dictionary of values that were read from sensors
+                within the habitat.
+
+        """
+        self.writer.writeRecords(
+            data["baskTemp"],
+            data["coolTemp"],
+            data["baskHumidity"],
+            data["coolHumidity"]
+        )
+
+
+# -------------------------------------------------------------------
+# MAIN
+# -------------------------------------------------------------------
+if __name__ == "__main__":
+    try:
+        habitatIot = HabitatIot(upload=False)
+        habitatIot.run()
+    except KeyboardInterrupt:
+        print("\nDone")
