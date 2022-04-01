@@ -122,13 +122,13 @@ class HabitatIot:
 
         """
         abnormalities = []
-        if data["baskTemp"] < 76.5:
+        if data["baskTemp"] < 75.5:
             abnormalities.append(("Basking Temperature", "low"))
-        elif data["baskTemp"] > 110.0:
+        elif data["baskTemp"] > 102.0:
             abnormalities.append(("Basking Temperature", "high")) 
-        if data["coolTemp"] < 76.5:
+        if data["coolTemp"] < 68.0:
             abnormalities.append(("Cooling Temperature", "low"))
-        elif data["coolTemp"] > 110.0:
+        elif data["coolTemp"] > 95.0:
             abnormalities.append(("Cooling Temperature", "high")) 
         if data["waterLevel"] < 15.9:
             abnormalities.append(("Water Level", "low")) 
