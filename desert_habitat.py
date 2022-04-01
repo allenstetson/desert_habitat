@@ -130,7 +130,7 @@ class HabitatIot:
             abnormalities.append(("Cooling Temperature", "low"))
         elif data["coolTemp"] > 110.0:
             abnormalities.append(("Cooling Temperature", "high")) 
-        if data["waterLevel"] > 8.5:
+        if data["waterLevel"] < 15.9:
             abnormalities.append(("Water Level", "low")) 
 
         if abnormalities:
@@ -204,6 +204,11 @@ class HabitatIot:
 
         elapsed = stopTime - startTime
         distance = (elapsed * 34300) / 2
+        if distance < 0:
+            # Negative value resulting from sensor error
+            print("ERROR reading water level, trying again")
+            time.sleep(0.5)
+            return gatherWaterLevel()
         distance = float(decimal.Decimal(distance).quantize(decimal.Decimal('.1')))
         #-
         full = 3.0
@@ -213,7 +218,7 @@ class HabitatIot:
         percFull = float(decimal.Decimal(percFull).quantize(decimal.Decimal('.1')))
         #-
         print("Water level is {} cm from sensor ({}% full)".format(distance, percFull))
-        return distance
+        return percFull
 
     def run(self):
         """Main workhorse that continually reads data, checks it, and reports.
