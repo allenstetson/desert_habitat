@@ -4,6 +4,13 @@ Software for the desert habitat IoT devices and monitoring.
 ![](./img/desert_habitat.png "Desert Habitat")
 
 * [Summary](#summary)
+* [Structural Features](#structural-features)
+  * [Planning](#planning)
+  * [Exterior](#exterior)
+  * [Interior](#interior)
+* [Technical Features](#technical-features)
+* [Technical Documentation](#technical-documentation)
+* [Requirements](#requirements)
 
 FINISHED PHOTO HERE
 
@@ -36,7 +43,7 @@ Given these requirements, my designs included plans for structural elements as w
 
 ![](./img/drawings.jpg "Brainstorming Drawings")
 
-### Housing
+### Exterior
 
 Built from pine, due to cost, a mix of rough pine was used for the back, bottom, and generally for portions that won't be seen. Fine sanded pine was used for the main structure (the supports, the siding, the top, the drawers).  Plexiglass (clear acrylic) was used for the transparent sliding doors in front and on the side.  The top is made from an office light egg crate louver which proved _not_ to be cricket-proof (something that I wish had occurred to me much earlier) and is now therefore covered by fiberglass screen mesh.
 
