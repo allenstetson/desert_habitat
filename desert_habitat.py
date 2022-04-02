@@ -152,7 +152,7 @@ class HabitatIot:
             return
         self.lastReadingGood = True
 
-    def gatherData(self):
+    def gatherData(self, i=0):
         """Reads the sensors to gather the data from them.
 
         Returns:
@@ -161,20 +161,28 @@ class HabitatIot:
 
         """
         try:
+            # Sensor prone to partial buffer error; retry loop:
             humidity1 = self.baskingSensor.humidity
             tempC1 = self.baskingSensor.temperature
-            tempF1 = tempC1 * (9/5) + 32
-            print("basking humidity: {}%".format(humidity1))
-            print("basking temperature: {} c ({} f)".format(tempC1, tempF1))
             # -
             humidity2 = self.coolingSensor.humidity
             tempC2 = self.coolingSensor.temperature
-            tempF2 = tempC2 * (9/5) + 32
-            print("cooling humidity: {}%".format(humidity2))
-            print("cooling temperature: {} c ({} f)".format(tempC2, tempF2))
         except RuntimeError:
+            if i == 20:
+                print("ALERT: Sensor is unreachable!")
+                self.alertAbnormal()
+                raise
+            i += 1
             print("Nope. Retrying")
-            return self.gatherData()
+            time.sleep(0.25)
+            return self.gatherData(i=i)
+        tempF1 = tempC1 * (9/5) + 32
+        print("basking humidity: {}%".format(humidity1))
+        print("basking temperature: {} c ({} f)".format(tempC1, tempF1))
+        # -
+        tempF2 = tempC2 * (9/5) + 32
+        print("cooling humidity: {}%".format(humidity2))
+        print("cooling temperature: {} c ({} f)".format(tempC2, tempF2))
         data = {
             "baskTemp": tempF1,
             "baskHumidity": humidity1,
