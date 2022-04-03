@@ -71,7 +71,36 @@ I mixed enough paint for about a square foot or two of the rocks at a time, and 
 
 To my chagrin, I was overly ambitious with the pigment, and many of my rocks were quite saturated, even after drying.  While I was dismayed, this proved to be a happy accident, as it actually looks pretty good in the end.
 
+I mixed black acrylic paint into a spray bottle and sprayed the walls, allowing the black to run into creases, and blotting off some black where it was too strong. I then followed up with a brush, applying black to areas that needed to feel deeper or darker.  Finally, after sanding any grout that mistakenly reached the back wall, I applied a white wash to the walls above the rock in anticipation of a skyline.
+
 ![](./img/color_done.jpg "Painting complete, all colored")
+
+Since I was including a water feature, I wanted to ensure that the rock where the water would be running would resist many hours of water, and would be as waterproof as possible. To this end, I mixed some epoxy and applied it with a strip of cardboard to where the water was meant to run. I ran into an issue here. I had carved channels for the water to naturally run through, carried by gravity, but what I didn't anticipate is that the epoxy is subject to the same gravity, so as it was curing, it would run down into those channels, filling them in. As a result, my water is much less directed than was intended. I have not found a fantastic solution to this so far except for applying epoxy over a larger area or directing the water with the inclusion of more rocks.
+
+![](./img/epoxy.jpg "Mixing epoxy for the water feature")
+
+The next step was to paint the sky. I used reference photos of Utah for this, noting that the clouds in the photos hugged the horizon. I applied a progressively lighter shade of blue from the top down and let that dry. I then circled back in for some darker cloud colors (a grey), and then pure white which I applied as the grey was still drying. This allowed me to blend it well into the darker clouds. After a few minutes, I went back in with pure white again and painted the highlights.
+
+After the sky and clouds had been painted, I began painting the mountain and rock features in the distance. I used the same colors as were used for the rock, but mixed blue and white into them to give them the appearance of distance. I applied a base color to get the shapes, then went in with shade first, then the base color (blending that into the shadows, as needed) and finally highlight colors which skewed towards a more yellow/orange color. I tried to follow the contours of the habitat to some degree, lending to a sense of forced perspective.
+
+![](./img/backdrop.jpg "Finished backdrop painting")
+
+The final paint application was to paint the wood of the structure semi-gloss white. This blends into the furniture that we have already in the room where the habitat will sit.
+
+![](./img/half_white.jpg "Mid way through painting the structure white")
+
+
+To accommodate the plants, I needed a pot that would be waterproof, and that would fit in the non-standard openings that I had cut for the plants. My solution here was to use Super Sculpy and aluminum foil to shape a container specificaly to fit. This was baked and painted to blend in. Finally, soil and desert plants were added. One aloe vera cactus occupies the bottom of the habitat, and one succulent (possibly crassula) occupies the top.
+
+![](./img/baking_clay.jpg "Baking clay in oven for plant pots")  ![](./img/plants.jpg "Plants in the enclosure")
+
+Plexiglass (which was cut to fit early on) was then put into place and the top of the enclosure was finished. The Australian sand substrate was added along with a branch that had an interesting shape and a couple of twigs. Rocks from the craft store were added, the heat lamps were put in place, and the electronics were installed (see Technical Features).
+
+![](./img/habitat_done.jpg "The finished habitat")
+
+It was now ready for a delightful occupant: one bearded dragon!
+
+![](./img/dragon_relaxing.jpg "Bearded dragon relaxing in the habitat.")
 
 ## Technical Features
 
