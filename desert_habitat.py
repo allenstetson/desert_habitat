@@ -130,14 +130,36 @@ class HabitatIot:
             data (dict): The data to check for abnormalities.
 
         """
+        # Temperatures have different acceptable ranges during the day than
+        #  at night. 8am - 7:30pm, it should be pretty warm. Otherwise, let's
+        #  be more lenient.
+        timeNow = datetime.datetime.now().time()
+        if timeNow.hour > 19 and timeNow.minute > 30:
+            dayCycle = False
+        elif timeNow.hour < 8:
+            dayCycle = False
+        else:
+            dayCycle = True
+
+        if dayCycle:
+            baskingTempOkLow = 75.5
+            baskingTempOkHigh = 102.0
+            coolingTempOkLow = 68.0
+            coolingTempOkHigh = 95.0
+        else:
+            baskingTempOkLow = 66.5
+            baskingTempOkHigh = 102.0
+            coolingTempOkLow = 63.0
+            coolingTempOkHigh = 95.0
+
         abnormalities = []
-        if data["baskTemp"] < 75.5:
+        if data["baskTemp"] < baskingTempOkLow:
             abnormalities.append(("Basking Temperature", "low"))
-        elif data["baskTemp"] > 102.0:
+        elif data["baskTemp"] > baskingTempOkHigh:
             abnormalities.append(("Basking Temperature", "high")) 
-        if data["coolTemp"] < 68.0:
+        if data["coolTemp"] < coolingTempOkLow:
             abnormalities.append(("Cooling Temperature", "low"))
-        elif data["coolTemp"] > 95.0:
+        elif data["coolTemp"] > coolingTempOkHigh:
             abnormalities.append(("Cooling Temperature", "high")) 
         if data.get("waterLevel", 75.0) < 15.9:
             abnormalities.append(("Water Level", "low")) 
