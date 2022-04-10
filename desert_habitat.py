@@ -198,14 +198,14 @@ class HabitatIot:
             float: The distance in centimeters from the rangefinder.
 
         """
-        gpio.output(GPIO_TRIGGER, True)
-        # one millisecond ping
-        time.sleep(.00001)
-        gpio.output(GPIO_TRIGGER, False)
-
         valsToAvg = 0.0
         for i in range(10):
             # Sonic rangefinder can be squirrely - best to average
+            gpio.output(GPIO_TRIGGER, True)
+            # one millisecond ping
+            time.sleep(.00001)
+            gpio.output(GPIO_TRIGGER, False)
+
             startTime = time.time()
             stopTime = time.time()
             while gpio.input(GPIO_ECHO) == 0:
@@ -218,11 +218,13 @@ class HabitatIot:
             if distance < 0:
                 # Negative value resulting from sensor error
                 print("ERROR reading water level, trying again")
-                time.sleep(0.5)
-                return gatherWaterLevel()
-            valsToAvg += distance
-            time.sleep(0.5)
-        distance = float(decimal.Decimal(valsToAvg).quantize(decimal.Decimal('.1')))
+                return self.gatherWaterLevel()
+            else:
+                valsToAvg += distance
+                print("     water:{}  {}".format(i, distance))
+            time.sleep(0.25)
+
+        distance = float(decimal.Decimal(valsToAvg/10).quantize(decimal.Decimal('.1')))
         #-
         full = 3.0
         empty = 9.0
