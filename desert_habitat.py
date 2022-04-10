@@ -131,10 +131,10 @@ class HabitatIot:
 
         """
         # Temperatures have different acceptable ranges during the day than
-        #  at night. 8am - 7:30pm, it should be pretty warm. Otherwise, let's
+        #  at night. 8am - 8pm, it should be pretty warm. Otherwise, let's
         #  be more lenient.
         timeNow = datetime.datetime.now().time()
-        if timeNow.hour > 19 or timeNow.minute > 30:
+        if timeNow.hour > 20:
             dayCycle = False
         elif timeNow.hour < 8:
             dayCycle = False
