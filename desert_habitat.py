@@ -15,6 +15,7 @@ import time
 
 # third party
 import adafruit_dht
+import argparse
 import board
 import decimal
 import requests
@@ -69,6 +70,7 @@ class HabitatIot:
 
     """
     def __init__(self, notify=True, upload=True, uploadInterval=None):
+        self.args = None
         self.baskingSensor = DHT_SENSOR1
         self.coolingSensor = DHT_SENSOR2
         self.lastAbnormality = datetime.datetime(2007, 2, 7)
@@ -79,6 +81,13 @@ class HabitatIot:
         self.upload = upload
         self.uploadInterval = uploadInterval or 600
         self.writer = timestream.Writer()
+        self._parseInput()
+
+    def _parseInput(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("nowater", action="store_true",
+                            help="skip checks for water level")
+        self.args = parser.parse_args()
 
     def alertAbnormal(self):
         """Sends a push notification if one hasn't been sent in a while.
@@ -130,7 +139,7 @@ class HabitatIot:
             abnormalities.append(("Cooling Temperature", "low"))
         elif data["coolTemp"] > 95.0:
             abnormalities.append(("Cooling Temperature", "high")) 
-        if data["waterLevel"] < 15.9:
+        if data.get("waterLevel", 75.0) < 15.9:
             abnormalities.append(("Water Level", "low")) 
 
         if abnormalities:
@@ -249,8 +258,9 @@ class HabitatIot:
             )
             print(msg)
             data = self.gatherData()
-            waterLevel = self.gatherWaterLevel()
-            data["waterLevel"] = waterLevel
+            if not self.args.nowater:
+                waterLevel = self.gatherWaterLevel()
+                data["waterLevel"] = waterLevel
             self.checkValues(data)
             if self.upload:
                 uploadDelta = datetime.datetime.now() - self.lastUpload
@@ -274,7 +284,7 @@ class HabitatIot:
             data["coolTemp"],
             data["baskHumidity"],
             data["coolHumidity"],
-            data["waterLevel"]
+            data.get("waterLevel", 75.0)
         )
 
 
