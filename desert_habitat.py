@@ -85,7 +85,7 @@ class HabitatIot:
 
     def _parseInput(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument("nowater", action="store_true",
+        parser.add_argument("--nowater", action="store_true",
                             help="skip checks for water level")
         self.args = parser.parse_args()
 
@@ -134,7 +134,7 @@ class HabitatIot:
         #  at night. 8am - 7:30pm, it should be pretty warm. Otherwise, let's
         #  be more lenient.
         timeNow = datetime.datetime.now().time()
-        if timeNow.hour > 19 and timeNow.minute > 30:
+        if timeNow.hour > 19 or timeNow.minute > 30:
             dayCycle = False
         elif timeNow.hour < 8:
             dayCycle = False
